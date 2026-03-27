@@ -5,6 +5,8 @@ from django.urls import include, path
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # Backward-compatible routes for clients calling `/jobs/` etc.
+    path("", include("apps.separation.urls")),
     path("api/", include("apps.separation.urls")),
 ]
 
