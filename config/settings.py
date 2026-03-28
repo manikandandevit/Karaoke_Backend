@@ -1,25 +1,20 @@
-import os
 from pathlib import Path
-
-from dotenv import load_dotenv
-
-load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key-change-me")
-DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
+SECRET_KEY = "DlL0sm3wRzIe9GyuI32QMdhlKizXQKQng1amhaf26lDj8LAE8pq6GBAFHBPCSSbKAUg"
+DEBUG = False
 
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
+    "corsheaders",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "corsheaders",
     "rest_framework",
     "apps.separation",
 ]
@@ -58,11 +53,11 @@ ASGI_APPLICATION = "config.asgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB", "karaoke_db"),
-        "USER": os.getenv("POSTGRES_USER", "karaoke_user"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "karaoke_pass"),
-        "HOST": os.getenv("POSTGRES_HOST", "localhost"),
-        "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        "NAME": "karaoke_mndp",
+        "USER": "karaoke_mndp_user",
+        "PASSWORD": "9HpdsjeFPfyw1wAAx4etF0DfIuUx8AgG",
+        "HOST": "dpg-d73k89ruibrs73av1310-a.oregon-postgres.render.com",
+        "PORT": "5432",
     }
 }
 
@@ -86,4 +81,4 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://127.0.0.1:5173,http://localhost:5173").split(",")
+CORS_ALLOW_ALL_ORIGINS = True

@@ -1,7 +1,5 @@
-import threading
 from pathlib import Path
 
-from django.db import close_old_connections
 from django.http import FileResponse, Http404
 from rest_framework import status
 from rest_framework.response import Response
@@ -10,29 +8,6 @@ from rest_framework.views import APIView
 from .models import SeparationJob
 from .serializers import CreateJobSerializer, MixRequestSerializer, SeparationJobSerializer
 from .services import export_mix, get_output_root, run_demucs
-
-
-def _process_job_in_background(job_id):
-    # Ensure this thread does not reuse stale DB connections.
-    close_old_connections()
-    job = SeparationJob.objects.filter(id=job_id).first()
-    if not job:
-        return
-
-    try:
-        source_path = Path(job.source_file.path)
-        output_dir = get_output_root() / str(job.id)
-        result_dir = run_demucs(source_path, output_dir)
-        job.status = SeparationJob.Status.COMPLETED
-        job.metadata = {"output_dir": str(result_dir)}
-        job.error_message = ""
-        job.save(update_fields=["status", "metadata", "error_message", "updated_at"])
-    except Exception as exc:  # pragma: no cover
-        job.status = SeparationJob.Status.FAILED
-        job.error_message = str(exc)
-        job.save(update_fields=["status", "error_message", "updated_at"])
-    finally:
-        close_old_connections()
 
 
 class HealthView(APIView):
@@ -48,8 +23,17 @@ class CreateJobView(APIView):
         upload = serializer.validated_data["file"]
         job = SeparationJob.objects.create(source_file=upload, status=SeparationJob.Status.PROCESSING)
 
-        worker = threading.Thread(target=_process_job_in_background, args=(job.id,), daemon=True)
-        worker.start()
+        try:
+            source_path = Path(job.source_file.path)
+            output_dir = get_output_root() / str(job.id)
+            result_dir = run_demucs(source_path, output_dir)
+            job.status = SeparationJob.Status.COMPLETED
+            job.metadata = {"output_dir": str(result_dir)}
+            job.save(update_fields=["status", "metadata", "updated_at"])
+        except Exception as exc:  # pragma: no cover
+            job.status = SeparationJob.Status.FAILED
+            job.error_message = str(exc)
+            job.save(update_fields=["status", "error_message", "updated_at"])
 
         return Response(SeparationJobSerializer(job).data, status=status.HTTP_201_CREATED)
 
