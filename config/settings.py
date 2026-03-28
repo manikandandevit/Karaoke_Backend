@@ -81,6 +81,10 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CORS_ALLOWED_ORIGINS = [
-    "https://karaoke-front-end.vercel.app",
-]
+# Open CORS so preflight/POST always get headers when the worker responds.
+CORS_ALLOW_ALL_ORIGINS = True
+
+# Demucs: htdemucs OOMs on small Render instances; mdx_extra_q is lighter (see demucs pretrained help).
+DEMUCS_MODEL = "mdx_extra_q"
+# Smaller segments = lower peak RAM (seconds per chunk).
+DEMUCS_SEGMENT_SECONDS = 12

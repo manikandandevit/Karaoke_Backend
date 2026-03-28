@@ -1,8 +1,20 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 from django.conf import settings
+
+
+def _demucs_subprocess_env() -> dict[str, str]:
+    """Cap BLAS/torch threads so one job uses less RAM on small hosts (e.g. Render)."""
+    base = os.environ.copy()
+    base.setdefault("OMP_NUM_THREADS", "1")
+    base.setdefault("MKL_NUM_THREADS", "1")
+    base.setdefault("OPENBLAS_NUM_THREADS", "1")
+    base.setdefault("NUMEXPR_NUM_THREADS", "1")
+    base.setdefault("TOKENIZERS_PARALLELISM", "false")
+    return base
 
 
 def run_demucs(input_path: Path, output_root: Path) -> Path:
@@ -11,20 +23,28 @@ def run_demucs(input_path: Path, output_root: Path) -> Path:
     Uses the same Python interpreter as Django so ``demucs`` is found in the active venv.
     """
     output_root.mkdir(parents=True, exist_ok=True)
+    model_name = getattr(settings, "DEMUCS_MODEL", "mdx_extra_q")
+    segment = getattr(settings, "DEMUCS_SEGMENT_SECONDS", 12)
     command = [
         sys.executable,
         "-m",
         "demucs.separate",
         "--mp3",
+        "-d",
+        "cpu",
         "-n",
-        "htdemucs",
+        model_name,
+        "--segment",
+        str(segment),
+        "-j",
+        "1",
         "-o",
         str(output_root),
         str(input_path),
     ]
-    subprocess.run(command, check=True)
+    subprocess.run(command, check=True, env=_demucs_subprocess_env())
 
-    model_dir = output_root / "htdemucs"
+    model_dir = output_root / model_name
     # Demucs output folder name usually equals source filename stem.
     job_dir = model_dir / input_path.stem
     _ensure_no_vocals_from_four_stems(job_dir)
